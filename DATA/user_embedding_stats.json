@@ -1,0 +1,16 @@
+{
+  "model": "sentence-transformers/all-MiniLM-L6-v2",
+  "revision": "1110a243fdf4706b3f48f1d95db1a4f5529b4d41",
+  "users": 20,
+  "dimensions": 384,
+  "dtype": "float32",
+  "normalize_embeddings": true,
+  "career_compatibility_verified": true,
+  "metadata_order_verified": true,
+  "token_limit_including_special_tokens": 256,
+  "average_tokens": 249.3,
+  "median_tokens": 249.5,
+  "minimum_tokens": 247,
+  "maximum_tokens": 250,
+  "percentage_truncated": 0.0
+}

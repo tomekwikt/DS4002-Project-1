@@ -1,0 +1,13 @@
+{
+  "model": "sentence-transformers/all-MiniLM-L6-v2",
+  "revision": "1110a243fdf4706b3f48f1d95db1a4f5529b4d41",
+  "profiles": 1016,
+  "token_limit_including_special_tokens": 256,
+  "average_tokens": 227.1938976377953,
+  "median_tokens": 248.0,
+  "minimum_tokens": 16,
+  "maximum_tokens": 250,
+  "percentage_over_limit": 0.0,
+  "profiles_in_245_to_250_range": 874,
+  "percentage_truncated": 0.0
+}
