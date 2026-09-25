@@ -32,3 +32,20 @@ DS-4002-Project-1/
   |--[figures]
   |--[tables]
   |--[model outputs]
+
+## Section 3: Instructions for Reproducing Results
+
+Step 1: Open project notebook in Google Colab. 
+
+Step 2: Run the notebook from the beginning in order with datasets (occupation_data.csv, task_statements.csv, essential_skills.csv).
+
+Step 3: The notebook will use the Sentence-BERT tokenizer aspect to check the length of each career profile. Profiles that exceed the 384-token limit will be shortened using the projects preprocessing rules. 
+
+Step 4: By the end, the notebook will have created the final career-profile dataset career_profiles.csv and will be used for the input career-matching model .
+
+Step 5: The career profiles will then be used in the Sentence-Bert model. The model will convert each career profile into a numerical embedding. 
+
+Step 6: A user's resume and interests will be combined into one profile and converted into an embedding using the same Sentence-BERT model. The user embedding will then be compared with the career embeddings using cosine similarity. The careers will be ranked from highest to lowest similarity, and the top five career matches will be returned for each user profile. 
+
+Step 7: The recommendations will be evaluated using Top 5 accuracy, which measures whether at least one expected career appears among the five recommended careers. 
+
