@@ -1,3 +1,16 @@
+# STEP 05 - Rank careers for the 20 sample users using existing embeddings.
+# Inputs: both .npy arrays, both embedding_stats.json files, user_metadata.csv,
+# and processed_user_profiles.csv in DATA; career_metadata.csv and
+# processed_career_profiles.csv in DATA/Career Profile Files (or DATA, not both).
+# Output: OUTPUT/career_matches.csv; a readable summary is printed to the terminal.
+# Setup: Python 3.12 and NumPy from requirements.txt. No model download is needed.
+# Run from the repository root after steps 01-04:
+#   python SCRIPTS/05_match_careers.py
+# To also save the printed summary in PowerShell:
+#   python SCRIPTS/05_match_careers.py | Tee-Object -FilePath "OUTPUT/career_matches_summary.txt"
+# Existing output is overwritten. This stage expects 20 users and 1,016 careers.
+# Returns five matches each (100 rows); similarity is not validated Top-5 accuracy.
+
 """Rank existing normalized career embeddings for each user; no model loading.
 
 Run: .venv/Scripts/python.exe SCRIPTS/05_match_careers.py
@@ -21,6 +34,7 @@ FIELDS = ["user_id", "rank", "career_code", "career_title", "cosine_similarity"]
 def career_file(data_dir, name):
     """Support the original layout and the reorganized career-data folder."""
     candidates = [data_dir / name, data_dir / "Career Profile Files" / name]
+    # Reject duplicate copies rather than silently choose potentially stale metadata.
     found = [path for path in candidates if path.is_file()]
     if len(found) != 1:
         raise ValueError(f"Expected exactly one {name} in DATA or Career Profile Files; found {len(found)}")
@@ -28,6 +42,7 @@ def career_file(data_dir, name):
 
 
 def read_metadata(path, fields):
+    # Read only requested columns as strings so codes and IDs keep their formatting.
     with path.open(encoding="utf-8-sig", newline="") as source:
         reader = csv.DictReader(source)
         missing = set(fields) - set(reader.fieldnames or [])
@@ -61,6 +76,7 @@ def rank_matches(users, careers, user_metadata, career_metadata, top_k=5):
     similarities = users.astype(np.float64) @ careers.astype(np.float64).T
     if not np.isfinite(similarities).all() or np.any(np.abs(similarities) > 1 + 1e-5):
         raise ValueError("Invalid cosine similarity values")
+    # Clip tiny floating-point overshoots after rejecting genuinely invalid scores.
     similarities = np.clip(similarities, -1.0, 1.0)
     codes = np.array([row[CODE] for row in career_metadata])
     results = []
@@ -81,6 +97,8 @@ def main():
     parser.add_argument("--output", type=Path, default=ROOT / "OUTPUT/career_matches.csv")
     args = parser.parse_args()
     data_dir = args.data_dir
+    # Arrays have no IDs inside them; companion CSVs supply row identities.
+    # Disable pickle because these files should contain numeric arrays only.
     users = np.load(data_dir / "user_embeddings.npy", allow_pickle=False)
     careers = np.load(data_dir / "career_embeddings.npy", allow_pickle=False)
     user_metadata = read_metadata(data_dir / "user_metadata.csv", ["user_id"])
@@ -94,12 +112,15 @@ def main():
         raise ValueError("User metadata order differs from processed user profiles")
     if career_metadata != read_metadata(career_file(data_dir, "processed_career_profiles.csv"), [CODE, "Title"]):
         raise ValueError("Career metadata order differs from processed career profiles")
+    # Both vector sets must come from the same model version to be comparable.
     user_stats = json.loads((data_dir / "user_embedding_stats.json").read_text(encoding="utf-8"))
     career_stats = json.loads((data_dir / "career_embedding_stats.json").read_text(encoding="utf-8"))
     for key in ("model", "revision"):
         if not user_stats.get(key) or user_stats[key] != career_stats.get(key):
             raise ValueError(f"User and career embeddings have incompatible {key}")
 
+    # Check five distinct, correctly ordered recommendations for every user
+    # before publishing the CSV. These are consistency checks, not accuracy tests.
     results = rank_matches(users, careers, user_metadata, career_metadata)
     if len(results) != 100:
         raise ValueError("Expected 100 recommendations")
@@ -110,6 +131,7 @@ def main():
                 or any(a["cosine_similarity"] < b["cosine_similarity"] for a, b in zip(matches, matches[1:]))):
             raise ValueError(f"Invalid recommendations for {user['user_id']}")
 
+    # Persist full-precision scores; the terminal summary rounds them for readability.
     args.output.parent.mkdir(parents=True, exist_ok=True)
     with args.output.open("w", encoding="utf-8", newline="") as destination:
         writer = csv.DictWriter(destination, fieldnames=FIELDS)

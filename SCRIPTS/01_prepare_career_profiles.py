@@ -1,6 +1,16 @@
+# STEP 01 - Prepare career text for embedding.
+# Inputs: occupation_data.csv, essential_skills.csv, task_statements.csv in
+# DATA/Career Profile Files. Output: processed_career_profiles.csv there.
+# Setup: Python 3.12; install requirements.txt. First use downloads the tokenizer.
+# Run from the repository root:
+#   python SCRIPTS/01_prepare_career_profiles.py --data-dir "DATA/Career Profile Files"
+# The explicit path is needed because --data-dir otherwise defaults to DATA.
+# Existing output is overwritten. Run step 02 next.
+# All described occupations remain eligible; missing skills/tasks are not imputed.
+
 """Build complete and token-budgeted career profiles with MiniLM's tokenizer.
 
-Run from any directory: python SCRIPTS/01_prepare_career_profiles.py
+Run from the repository root with the --data-dir command in the header.
 Install dependencies from requirements.txt. No embeddings are generated here.
 `full_profile_text` preserves the original top-10-skills/all-tasks profile.
 `profile_text` selects from ALL ranked skills and whole tasks, aiming for
@@ -15,6 +25,7 @@ from collections import defaultdict
 from pathlib import Path
 
 
+# Shared join key and fixed tokenizer version keep preparation consistent with encoding.
 CODE = "O*NET-SOC Code"
 DATA_DIR = Path(__file__).resolve().parents[1] / "DATA"
 MISSING = {"", "nan", "none", "null", "n/a", "na"}
@@ -24,6 +35,7 @@ TOKEN_BUDGET = 250
 
 
 def render_profile(title, description, skills, tasks):
+    # Omit empty sections so missing source content does not become model input.
     sections = [("Occupation", title), ("Description", description),
                 ("Skills", "; ".join(skills)), ("Tasks", " ".join(tasks))]
     return " ".join(f"{label}: {value}" for label, value in sections if value)
@@ -48,6 +60,7 @@ def shorten_profile(title, description, skills, tasks, tokenizer, budget=TOKEN_B
         return len(tokenizer.encode(text_for(skill_ids, task_ids),
                                     add_special_tokens=True, truncation=False))
 
+    # Count actual model tokens, including labels and special tokens, before selection.
     base_count = count([], [])
     if base_count > budget:
         raise ValueError(f"{title}: title and description exceed {budget} tokens; "
@@ -57,6 +70,8 @@ def shorten_profile(title, description, skills, tasks, tokenizer, budget=TOKEN_B
     def task_order():
         covered = set().union(*(words[i] for i in selected_tasks))
         def priority(i):
+            # Support is a respondent count; division by 100 is a weighting heuristic,
+            # not a conversion to a response percentage. Source order breaks ties.
             novelty = len(words[i] - covered) / max(1, len(words[i]))
             return (-tasks[i]["core"], -(tasks[i]["support"] / 100 + novelty), i)
         return sorted((i for i in range(len(tasks)) if i not in selected_tasks), key=priority)
@@ -129,6 +144,7 @@ def clean(value):
 
 
 def read_rows(path, required):
+    # Accept UTF-8 with or without a BOM; fail early if a required column is absent.
     with path.open(encoding="utf-8-sig", newline="") as source:
         reader = csv.DictReader(source)
         missing = set(required) - set(reader.fieldnames or [])
@@ -157,6 +173,8 @@ def prepare_profiles(data_dir, top_skills=10, tokenizer=None):
             if not occupation[field]:
                 occupation[field] = row[field]
 
+    # Use Importance ratings only; Level scores measure a different quantity.
+    # Suppression/relevance flags remain in the source but are not filtered here.
     skills = defaultdict(dict)
     for row in read_rows(
         data_dir / "essential_skills.csv",
@@ -177,6 +195,8 @@ def prepare_profiles(data_dir, top_skills=10, tokenizer=None):
         if previous is None or score > previous[1]:
             skills[code][key] = (name, score)
 
+    # Group unique task text by occupation; missing respondent counts get zero
+    # selection weight. Prefer Core status and stronger support for duplicates.
     tasks = defaultdict(dict)
     for row in read_rows(data_dir / "task_statements.csv", [CODE, "Task"]):
         code, task = row[CODE], row["Task"]
@@ -193,6 +213,8 @@ def prepare_profiles(data_dir, top_skills=10, tokenizer=None):
             if previous is None or (candidate["core"], support) > (previous["core"], previous["support"]):
                 tasks[code][task.casefold()] = candidate
 
+    # Sort career codes to make output order stable and retain the full source
+    # profile beside the shortened text so selections can be inspected later.
     profiles = []
     for code, occupation in sorted(occupations.items()):
         ranked = sorted(skills[code].values(), key=lambda item: (-item[1], item[0].casefold()))
@@ -231,6 +253,7 @@ def main():
         parser.error("--top-skills must be nonnegative")
     profiles = prepare_profiles(args.data_dir, args.top_skills)
     output = args.output or args.data_dir / "processed_career_profiles.csv"
+    # Write a named-column CSV consumed by step 02; create its folder if needed.
     output.parent.mkdir(parents=True, exist_ok=True)
     with output.open("w", encoding="utf-8", newline="") as destination:
         writer = csv.DictWriter(destination, fieldnames=[CODE, "Title", "Description", "Skills", "Tasks",

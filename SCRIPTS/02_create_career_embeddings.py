@@ -1,7 +1,21 @@
+# STEP 02 - Convert prepared career profiles into numerical vectors.
+# Input: DATA/Career Profile Files/processed_career_profiles.csv from step 01.
+# Outputs: career_embeddings.npy, career_metadata.csv, career_embedding_stats.json.
+# Setup: Python 3.12 and requirements.txt; first use downloads the model.
+# Run from the repository root:
+#   python SCRIPTS/02_create_career_embeddings.py --data-dir "DATA/Career Profile Files"
+# All three outputs overwrite files in --data-dir. Before step 04, move
+# career_embeddings.npy and career_embedding_stats.json into DATA, replacing the
+# earlier copies. Leave career_metadata.csv in DATA/Career Profile Files.
+# PowerShell commands (from the repository root):
+#   Move-Item -LiteralPath "DATA/Career Profile Files/career_embeddings.npy" -Destination "DATA/career_embeddings.npy" -Force
+#   Move-Item -LiteralPath "DATA/Career Profile Files/career_embedding_stats.json" -Destination "DATA/career_embedding_stats.json" -Force
+# Run step 03 next. Keep metadata rows in exactly the same order as vector rows.
+
 """Encode career profiles with sentence-transformers/all-MiniLM-L6-v2.
 
 Install dependencies: python -m pip install numpy sentence-transformers
-Run: python SCRIPTS/02_create_career_embeddings.py
+Run from the repository root with the --data-dir command in the header.
 The first run downloads the pretrained model; subsequent runs use its cache.
 
 Load and compare later (use the SAME model for resume + interests):
@@ -24,6 +38,7 @@ from pathlib import Path
 
 DATA_DIR = Path(__file__).resolve().parents[1] / "DATA"
 MODEL_NAME = "sentence-transformers/all-MiniLM-L6-v2"
+# A fixed model snapshot prevents upstream updates from changing the vector space.
 MODEL_REVISION = "1110a243fdf4706b3f48f1d95db1a4f5529b4d41"
 CODE = "O*NET-SOC Code"
 
@@ -38,6 +53,8 @@ def load_profiles(path):
         missing = {CODE, "Title", text_column} - set(columns)
         if missing:
             raise ValueError(f"{path}: missing columns {sorted(missing)}")
+        # Build text and identifiers together; dropping/reordering only one would
+        # attach career names to the wrong vectors. Duplicate codes are rejected.
         texts, metadata, seen = [], [], set()
         for row_number, row in enumerate(reader, start=2):
             code = (row[CODE] or "").strip()
@@ -73,6 +90,7 @@ def main():
             "Install dependencies with: python -m pip install numpy sentence-transformers"
         ) from error
 
+    # Load the same fixed model used later for users; do not train or fine-tune it.
     model = SentenceTransformer(MODEL_NAME, revision=MODEL_REVISION)
     # Measure truncation using the actual tokenizer, including special tokens.
     token_counts = np.array([
@@ -82,6 +100,7 @@ def main():
     ])
     limit = min(256, model.max_seq_length)
     truncated = int((token_counts > limit).sum())
+    # Record token lengths and model identity for later compatibility checks.
     stats = {
         "model": MODEL_NAME, "revision": MODEL_REVISION,
         "profiles": len(texts), "token_limit_including_special_tokens": limit,
@@ -108,6 +127,7 @@ def main():
         convert_to_numpy=True,
         normalize_embeddings=True,
     ).astype(np.float32)
+    # Require one finite 384-component unit vector per profile before saving.
     if embeddings.shape != (len(metadata), 384) or not np.isfinite(embeddings).all():
         raise ValueError("Expected one finite, 384-dimensional embedding per career")
     if not np.allclose(np.linalg.norm(embeddings, axis=1), 1.0, atol=1e-5):
@@ -119,6 +139,7 @@ def main():
         writer = csv.DictWriter(destination, fieldnames=[CODE, "Title"])
         writer.writeheader()
         writer.writerows(metadata)
+    # Step 04 and step 05 read this JSON; it is part of the pipeline inputs.
     (args.data_dir / "career_embedding_stats.json").write_text(
         json.dumps(stats, indent=2) + "\n", encoding="utf-8")
     print(f"Saved embeddings {embeddings.shape} and matching metadata to {args.data_dir}")

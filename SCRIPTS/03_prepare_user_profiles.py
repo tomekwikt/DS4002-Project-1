@@ -1,8 +1,20 @@
+# STEP 03 - Select resume information and interests for each user profile.
+# Input: DATA/Example User Profiles/
+# career_match_20_resumes_with_generated_interests.csv, containing Resume_str
+# and Generated_Interests. The interests are already present in this source file.
+# Outputs: DATA/processed_user_profiles.csv and processed_user_profiles.stats.json.
+# Setup: Python 3.12 and requirements.txt; first use downloads the tokenizer.
+# Run from the repository root:
+#   python SCRIPTS/03_prepare_user_profiles.py
+# Use --input to select a different CSV or resolve ambiguous source filenames.
+# Outputs are overwritten. Run step 04 after both steps 02 and 03 are complete.
+# Original text is retained; input cleanup is not comprehensive anonymization.
+
 """Create extractive, token-budgeted resume + interest profiles.
 
 Run: .venv/Scripts/python.exe SCRIPTS/03_prepare_user_profiles.py
 Uses the pinned MiniLM tokenizer, not an LLM; no qualifications are inferred.
-Original CSV fields are retained verbatim. See README.md for selection rules.
+Original CSV fields are retained verbatim. Selection rules are explained below.
 """
 
 import argparse
@@ -15,10 +27,13 @@ from collections import defaultdict
 from pathlib import Path
 
 MODEL_NAME = "sentence-transformers/all-MiniLM-L6-v2"
+# Match the exact tokenizer/model snapshot used by career preparation and encoding.
 MODEL_REVISION = "1110a243fdf4706b3f48f1d95db1a4f5529b4d41"
 DATA_DIR = Path(__file__).resolve().parents[1] / "DATA"
 STEM = "career_match_20_resumes_with_generated_interests"
 BUDGET = 250
+# Recognized resume headings route source text into selection categories.
+# These rules handle the sample formats; they do not infer missing qualifications.
 SECTION_PATTERN = re.compile(
     r"\b(Education and Training|Professional Experience|Professional Summary|"
     r"Professional Affiliations|Additional Information|Activities and Honors|"
@@ -53,10 +68,12 @@ def normalize(text):
 
 
 def words(text):
+    # Ignore common filler words when measuring overlap and new information.
     return set(re.findall(r"[a-z][a-z0-9+#-]*", text.lower())) - STOP
 
 
 def unique(units):
+    # Deduplicate normalized text without changing the first-occurrence order.
     result, seen = [], set()
     for text in units:
         text = normalize(text)
@@ -110,6 +127,7 @@ def split_units(text, category):
 
 
 def extract_resume(raw):
+    # Detect section boundaries, rejecting words that resemble headings in prose.
     text = normalize(raw)
     matches = []
     for match in SECTION_PATTERN.finditer(text):
@@ -150,6 +168,7 @@ def extract_resume(raw):
     sections["Skills"] = [u for u in sections.get("Skills", []) if u.casefold().strip(".") not in debris]
     sections["Education"] = [u for u in sections.get("Education", [])
                              if len(words(u)) >= 3 and not re.match(r"(?:While|I |This |Also )", u)]
+    # Unrecognized layouts fall back to experience units instead of losing all text.
     if not any(sections.values()):
         sections["Experience"] = split_units(text, "Experience")
     return title, sections
@@ -162,6 +181,7 @@ def build_profile(resume, interests, tokenizer):
         raise ValueError("Both resume and interests must be nonempty")
     selected = {category: [] for category in ("Education", "Experience", "Skills", "Summary")}
     interest_words = words(interests)
+    # Repeated candidate evaluations reuse exact token counts for identical text.
     token_cache = {}
 
     def render(selection):
@@ -171,6 +191,7 @@ def build_profile(resume, interests, tokenizer):
                 joined = ("; ".join(units) if category == "Skills" else
                           " ".join(unit if unit.endswith((".", "!", "?")) else unit + "." for unit in units))
                 parts.append(f"{category}: " + joined)
+        # Reserve the entire cleaned interests paragraph in every candidate profile.
         parts.append(f"Interests: {interests}")
         return " ".join(parts)
 
@@ -181,10 +202,12 @@ def build_profile(resume, interests, tokenizer):
         return token_cache[text]
 
     def with_unit(category, unit):
+        # Copy selections so evaluating a candidate does not mutate accepted text.
         return {key: values + [unit] if key == category else values[:]
                 for key, values in selected.items()}
 
     def rank(category, unit):
+        # Hand-set lexical weights guide extraction; this is not a trained ranker.
         terms = words(unit)
         covered = words(" ".join(x for units in selected.values() for x in units))
         overlap = len(terms & interest_words)
@@ -299,6 +322,8 @@ def main():
     if not rows:
         raise ValueError("Input contains no people")
     results, seen = [], defaultdict(int)
+    # Preserve source order and raw fields. The hash makes IDs repeatable for
+    # unchanged inputs; occurrence suffixes distinguish identical source rows.
     for index, row in enumerate(rows, 1):
         resume, interests = row["Resume_str"] or "", row["Generated_Interests"] or ""
         digest = hashlib.sha256((resume + "\0" + interests).encode("utf-8")).hexdigest()[:16]
@@ -317,16 +342,19 @@ def main():
                         "selected_experience": " | ".join(selected["Experience"]),
                         "selected_skills": " | ".join(selected["Skills"]),
                         "selected_summary": " | ".join(selected["Summary"])})
+    # Independently recount the final batch to verify the stored token counts.
     counts = [len(ids) for ids in tokenizer([r["profile_text"] for r in results],
               add_special_tokens=True, padding=False, truncation=False)["input_ids"]]
     assert counts == [r["token_count"] for r in results]
     assert max(counts) <= BUDGET < 256
     assert len({r["user_id"] for r in results}) == len(results)
+    # Save source text alongside selected units so each model input is traceable.
     args.output.parent.mkdir(parents=True, exist_ok=True)
     with args.output.open("w", encoding="utf-8", newline="") as f:
         writer = csv.DictWriter(f, fieldnames=list(results[0]))
         writer.writeheader()
         writer.writerows(results)
+    # This preparation report is informational; step 04 reads the processed CSV.
     stats = {"model": MODEL_NAME, "revision": MODEL_REVISION, "users": len(results),
              "average_tokens": statistics.mean(counts), "median_tokens": statistics.median(counts),
              "minimum_tokens": min(counts), "maximum_tokens": max(counts),

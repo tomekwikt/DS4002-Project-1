@@ -1,3 +1,14 @@
+# STEP 04 - Encode user profiles in the same vector space as careers.
+# Inputs in DATA: processed_user_profiles.csv, career_embeddings.npy,
+# and career_embedding_stats.json. Complete steps 02 and 03 first.
+# Outputs in DATA: user_embeddings.npy, user_metadata.csv, user_embedding_stats.json.
+# Setup: Python 3.12 and requirements.txt; model download requires internet on
+# first use. Step 02's career array and JSON must have been moved into DATA.
+# Run from the repository root:
+#   python SCRIPTS/04_create_user_embeddings.py
+# Existing outputs are overwritten. The default expected user count is 20.
+# Run step 05 next; preserve the order of user metadata and embedding rows.
+
 """Encode processed user profiles with the same MiniLM model as script 02.
 
 Run: .venv/Scripts/python.exe SCRIPTS/04_create_user_embeddings.py
@@ -17,6 +28,7 @@ from pathlib import Path
 
 DATA_DIR = Path(__file__).resolve().parents[1] / "DATA"
 MODEL_NAME = "sentence-transformers/all-MiniLM-L6-v2"
+# Use the career model snapshot exactly; equal dimensions alone are insufficient.
 MODEL_REVISION = "1110a243fdf4706b3f48f1d95db1a4f5529b4d41"
 
 
@@ -27,6 +39,7 @@ def load_profiles(path):
         missing = {"user_id", "profile_text"} - set(reader.fieldnames or [])
         if missing:
             raise ValueError(f"{path}: missing columns {sorted(missing)}")
+        # Append text and IDs together to preserve the input-to-vector mapping.
         texts, metadata, seen = [], [], set()
         for row_number, row in enumerate(reader, 2):
             user_id = (row["user_id"] or "").strip()
@@ -72,6 +85,7 @@ def main():
             or not np.allclose(np.linalg.norm(careers, axis=1), 1.0, atol=1e-5)):
         raise ValueError("Expected finite, unit-normalized 384-dimensional career embeddings")
 
+    # Recount untruncated tokens to catch changed or manually edited profiles.
     model = SentenceTransformer(MODEL_NAME, revision=MODEL_REVISION)
     token_counts = np.array([len(ids) for ids in model.tokenizer(
         texts, add_special_tokens=True, truncation=False, padding=False, verbose=False
@@ -89,11 +103,13 @@ def main():
         texts, batch_size=args.batch_size, show_progress_bar=True,
         convert_to_numpy=True, normalize_embeddings=True,
     ).astype(np.float32)
+    # Refuse malformed or non-normalized vectors before writing pipeline inputs.
     if embeddings.shape != (len(metadata), 384) or not np.isfinite(embeddings).all():
         raise ValueError("Expected one finite, 384-dimensional embedding per user")
     if not np.allclose(np.linalg.norm(embeddings, axis=1), 1.0, atol=1e-5):
         raise ValueError("User embeddings must have unit length for cosine comparisons")
 
+    # Save vectors separately from their identifiers, in identical row order.
     embedding_path = args.data_dir / "user_embeddings.npy"
     metadata_path = args.data_dir / "user_metadata.csv"
     np.save(embedding_path, embeddings, allow_pickle=False)
@@ -108,6 +124,7 @@ def main():
         saved_metadata = list(csv.DictReader(source))
     if not np.array_equal(saved, embeddings) or saved_metadata != metadata:
         raise ValueError("Saved embeddings or metadata failed round-trip verification")
+    # Record model identity and validation summaries for the matching stage.
     stats = {
         "model": MODEL_NAME, "revision": MODEL_REVISION,
         "users": len(texts), "dimensions": 384, "dtype": "float32",
