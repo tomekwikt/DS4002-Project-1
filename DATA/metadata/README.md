@@ -15,7 +15,7 @@ All CSVs have a header row. Text is UTF-8; scripts accept a UTF-8 BOM on input. 
 | [occupation_data.csv](../Career%20Profile%20Files/occupation_data.csv) | 1,016 rows, 3 columns; one occupation | Source titles and descriptions |
 | [essential_skills.csv](../Career%20Profile%20Files/essential_skills.csv) | 18,200 rows, 15 columns; occupation-skill-scale rating | 910 occupations, 10 essential skills each, two scales: 9,100 Importance and 9,100 Level ratings |
 | [task_statements.csv](../Career%20Profile%20Files/task_statements.csv) | 18,838 rows, 8 columns; one task | Tasks for 923 occupations |
-| [resume and interests CSV](../Example%20User%20Profiles/career_match_20_resumes_with_generated_interests.csv) | 20 rows, 2 columns; one sample user | Selected resume text and ChatGPT-generated interests |
+| [resume and interests CSV](../Example%20User%20Profiles/resume%20and%20interests%20CSV) | 20 rows, 2 columns; one sample user | Selected resume text and ChatGPT-generated interests |
 | [processed_career_profiles.csv](../Career%20Profile%20Files/processed_career_profiles.csv) | 1,016 rows, 10 columns | Full and selected career text plus token counts |
 | [processed_user_profiles.csv](../processed_user_profiles.csv) | 20 rows, 10 columns | Original and selected user text plus IDs and token counts |
 | [career_embeddings.npy](../career_embeddings.npy) | 1,016 x 384, float32 | Normalized career vectors |
