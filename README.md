@@ -135,7 +135,7 @@ The career embedding array should contain **1,016 rows and 384 columns**.
 ### Step 4: Prepare user profiles
 
 ```powershell
-.\.venv\Scripts\python.exe SCRIPTS/03_prepare_user_profiles.py --input "DATA/Example User Profiles/career_match_20_resumes_with_generated_interests.csv"
+.\.venv\Scripts\python.exe SCRIPTS/03_prepare_user_profiles.py --input "DATA/Example User Profiles/resume%20and%20interests%20CSV"
 ```
 
 This script combines each sample user’s resume information and generated interests into a selected profile of no more than 250 tokens. It preserves the original text in separate columns and assigns a unique user identifier.
