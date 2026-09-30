@@ -186,13 +186,13 @@ These two plots update the MI2 explanatory figures using the current source CSVs
 
 ### 1. Occupation coverage across source datasets
 
-![Bar chart: 1,016 occupations have descriptions, 923 have tasks, and 910 have essential skill ratings.](../../DATA/metadata/occupation_coverage.png)
+![Bar chart: 1,016 occupations have descriptions, 923 have tasks, and 910 have essential skill ratings.](../../OUTPUT/metadata/occupation_coverage.png)
 
 Each bar counts distinct occupation codes. Percentages use 1,016 descriptions as the denominator: tasks cover 90.8% and essential skills cover 89.6%. The final profile table retains every described occupation, so absence of source skills/tasks leads to sparse profiles rather than exclusion. This explains why the final analysis has 1,016 careers even though the common source intersection is 910.
 
 ### 2. Variation in essential skill Importance
 
-![Horizontal boxplots of ten essential skill Importance ratings across 910 occupations.](../../DATA/metadata/skill_importance_distribution.png)
+![Horizontal boxplots of ten essential skill Importance ratings across 910 occupations.](../../OUTPUT/metadata/skill_importance_distribution.png)
 
 Each distribution uses 910 `IM` ratings, one per occupation, for a given skill (9,100 ratings total); Level records are excluded. Boxes span the 25th-75th percentiles, the line is the median, whiskers extend to observations within 1.5 interquartile ranges, and circles mark more extreme observations. Skills are ordered by descending median with alphabetical ties; occupations are equally weighted.
 
