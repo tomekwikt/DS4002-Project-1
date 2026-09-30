@@ -50,7 +50,7 @@ DS4002-Project-1/
 │   │   ├── processed_career_profiles.csv
 │   │   └── career_metadata.csv
 │   ├── Example User Profiles/
-│   │   └── career_match_20_resumes_with_generated_interests.csv
+│   │   └── resume and interests CSV
 │   ├── metadata/
 │   │   └── README.md
 │   ├── processed_user_profiles.csv
