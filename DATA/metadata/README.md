@@ -165,7 +165,7 @@ All 100 match rows are complete. Each user has ranks 1-5 and five distinct caree
 
 ### Audit JSON files
 
-The saved [career embedding audit](../career_embedding_stats.json), [user preparation audit](../processed_user_profiles.stats.json), and [user embedding audit](../user_embedding_stats.json) are one-object JSON documents. Fields occur only where relevant to that stage.
+The saved [career embedding audit](../career_embedding_stats.json) and [user embedding audit](../user_embedding_stats.json) are one-object JSON documents. Running [script 03](../../SCRIPTS/03_prepare_user_profiles.py) also generates the user preparation audit, `DATA/processed_user_profiles.stats.json`; this generated file is not included in the repository. Fields occur only where relevant to that stage.
 
 | Field(s) | Type / meaning |
 |---|---|
