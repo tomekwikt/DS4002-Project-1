@@ -2,6 +2,7 @@
 # Inputs: occupation_data.csv, essential_skills.csv, task_statements.csv in
 # DATA/Career Profile Files. Output: processed_career_profiles.csv there.
 # Setup: Python 3.12; install requirements.txt. First use downloads the tokenizer.
+# Package version from requirements.txt: transformers==5.17.0.
 # Run from the repository root:
 #   python SCRIPTS/01_prepare_career_profiles.py --data-dir "DATA/Career Profile Files"
 # The explicit path is needed because --data-dir otherwise defaults to DATA.

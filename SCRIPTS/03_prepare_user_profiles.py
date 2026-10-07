@@ -4,6 +4,7 @@
 # and Generated_Interests. The interests are already present in this source file.
 # Outputs: DATA/processed_user_profiles.csv and processed_user_profiles.stats.json.
 # Setup: Python 3.12 and requirements.txt; first use downloads the tokenizer.
+# Package version from requirements.txt: transformers==5.17.0.
 # Run from the repository root:
 #   python SCRIPTS/03_prepare_user_profiles.py
 # Use --input to select a different CSV or resolve ambiguous source filenames.

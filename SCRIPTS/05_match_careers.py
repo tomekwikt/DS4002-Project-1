@@ -4,6 +4,7 @@
 # processed_career_profiles.csv in DATA/Career Profile Files (or DATA, not both).
 # Output: OUTPUT/career_matches.csv; a readable summary is printed to the terminal.
 # Setup: Python 3.12 and NumPy from requirements.txt. No model download is needed.
+# Package version from requirements.txt: numpy==2.5.3.
 # Run from the repository root after steps 01-04:
 #   python SCRIPTS/05_match_careers.py
 # To also save the printed summary in PowerShell:

@@ -2,6 +2,8 @@
 # Input: DATA/Career Profile Files/processed_career_profiles.csv from step 01.
 # Outputs: career_embeddings.npy, career_metadata.csv, career_embedding_stats.json.
 # Setup: Python 3.12 and requirements.txt; first use downloads the model.
+# Package versions from requirements.txt: numpy==2.5.3,
+# sentence-transformers==6.1.0, torch==2.14.0, transformers==5.17.0.
 # Run from the repository root:
 #   python SCRIPTS/02_create_career_embeddings.py --data-dir "DATA/Career Profile Files"
 # All three outputs overwrite files in --data-dir. Before step 04, move
@@ -14,7 +16,7 @@
 
 """Encode career profiles with sentence-transformers/all-MiniLM-L6-v2.
 
-Install dependencies: python -m pip install numpy sentence-transformers
+Install dependencies: python -m pip install -r requirements.txt
 Run from the repository root with the --data-dir command in the header.
 The first run downloads the pretrained model; subsequent runs use its cache.
 
@@ -87,7 +89,7 @@ def main():
         from sentence_transformers import SentenceTransformer
     except ImportError as error:
         raise SystemExit(
-            "Install dependencies with: python -m pip install numpy sentence-transformers"
+            "Install dependencies with: python -m pip install -r requirements.txt"
         ) from error
 
     # Load the same fixed model used later for users; do not train or fine-tune it.

@@ -21,12 +21,14 @@ The current pipeline uses **Python 3.12 on Windows** and runs through Python scr
 
 The required Python packages are listed in `requirements.txt`:
 
-| Package | Purpose |
-|---|---|
-| NumPy | Store embedding arrays and calculate numerical similarities |
-| sentence-transformers | Generate Sentence-BERT embeddings |
-| PyTorch | Run the pretrained neural network |
-| Transformers | Load the tokenizer and supporting model components |
+| Package | Version (requirements.txt) | Purpose |
+|---|---|---|
+| NumPy (`numpy`) | 2.5.3 | Store embedding arrays and calculate numerical similarities |
+| sentence-transformers | 6.1.0 | Generate Sentence-BERT embeddings |
+| PyTorch (`torch`) | 2.14.0 | Run the pretrained neural network |
+| Transformers (`transformers`) | 5.17.0 | Load the tokenizer and supporting model components |
+
+Standard-library modules used by the scripts (`argparse`, `collections`, `csv`, `hashlib`, `json`, `math`, `pathlib`, `re`, and `statistics`) are included with Python 3.12 and do not require separate package installations or versions.
 
 The model is **`sentence-transformers/all-MiniLM-L6-v2`**`. It produces **384-dimensional embeddings**. The preparation scripts limit selected profiles to **250 tokens, including special tokens**, within the model’s 256-token limit.
 
@@ -54,6 +56,7 @@ DS4002-Project-1/
 │   ├── metadata/
 │   │   └── README.md
 │   ├── processed_user_profiles.csv
+│   ├── processed_user_profiles.stats.json
 │   ├── career_embeddings.npy
 │   ├── career_embedding_stats.json
 │   ├── user_embeddings.npy

@@ -4,6 +4,8 @@
 # Outputs in DATA: user_embeddings.npy, user_metadata.csv, user_embedding_stats.json.
 # Setup: Python 3.12 and requirements.txt; model download requires internet on
 # first use. Step 02's career array and JSON must have been moved into DATA.
+# Package versions from requirements.txt: numpy==2.5.3,
+# sentence-transformers==6.1.0, torch==2.14.0, transformers==5.17.0.
 # Run from the repository root:
 #   python SCRIPTS/04_create_user_embeddings.py
 # Existing outputs are overwritten. The default expected user count is 20.
